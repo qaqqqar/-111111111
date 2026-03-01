@@ -1,0 +1,1238 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Character Editor</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+:root{--bg:#919D83;--text:#fffffe;--card:rgba(255,255,254,0.08);--card2:rgba(255,255,254,0.12);--card3:rgba(255,255,254,0.18);--accent:#c8d6b0;--accent2:#a8b892;--danger:#d4756a;--border:rgba(255,255,254,0.15);--shadow:0 2px 12px rgba(0,0,0,0.15)}
+html,body{width:100%;min-height:100vh;background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif;font-size:14px;line-height:1.6;overflow-x:hidden}
+::-webkit-scrollbar{width:4px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px}
+
+.qaq-header{position:sticky;top:0;z-index:100;background:rgba(145,157,131,0.95);backdrop-filter:blur(12px);padding:10px 16px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--border)}
+.qaq-header h1{font-size:16px;font-weight:600;letter-spacing:1px}
+.qaq-header-actions{display:flex;gap:8px}
+
+.qaq-btn{display:inline-flex;align-items:center;gap:4px;padding:6px 14px;border:1px solid var(--border);border-radius:8px;background:var(--card2);color:var(--text);font-size:13px;cursor:pointer;transition:all 0.2s;white-space:nowrap;font-family:inherit}
+.qaq-btn:active{transform:scale(0.96)}
+.qaq-btn:hover{background:var(--card3)}
+.qaq-btn-primary{background:var(--accent);color:#2a3320;border-color:var(--accent)}
+.qaq-btn-primary:hover{background:var(--accent2)}
+.qaq-btn-danger{border-color:var(--danger);color:var(--danger)}
+.qaq-btn-sm{padding:4px 10px;font-size:12px}
+.qaq-btn-xs{padding:2px 8px;font-size:11px;border-radius:6px}
+
+.qaq-tabs{display:flex;padding:0 16px;gap:0;background:rgba(145,157,131,0.5);border-bottom:1px solid var(--border)}
+.qaq-tab{flex:1;text-align:center;padding:10px 0;font-size:14px;cursor:pointer;border-bottom:2px solid transparent;transition:all 0.2s;opacity:0.6}
+.qaq-tab.active{opacity:1;border-bottom-color:var(--accent);font-weight:600}
+
+.qaq-page{display:none;padding:12px 12px 80px}
+.qaq-page.active{display:block}
+
+.qaq-section{background:var(--card);border:1px solid var(--border);border-radius:12px;margin-bottom:12px;overflow:hidden}
+.qaq-section-header{display:flex;align-items:center;justify-content:space-between;padding:12px 14px;cursor:pointer;user-select:none}
+.qaq-section-title{font-size:14px;font-weight:600;display:flex;align-items:center;gap:6px}
+.qaq-section-actions{display:flex;gap:4px;align-items:center}
+.qaq-section-body{padding:0 14px 14px}
+.qaq-section.collapsed .qaq-section-body{display:none}
+.qaq-section .qaq-chevron{transition:transform 0.2s;transform:rotate(90deg)}
+.qaq-section.collapsed .qaq-chevron{transform:rotate(0deg)}
+
+.qaq-field{margin-bottom:10px}
+.qaq-field-label{font-size:12px;opacity:0.7;margin-bottom:4px;display:flex;align-items:center;justify-content:space-between}
+.qaq-input,.qaq-textarea{width:100%;padding:8px 12px;background:var(--card2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:13px;font-family:inherit;outline:none;transition:border-color 0.2s}
+.qaq-input:focus,.qaq-textarea:focus{border-color:var(--accent)}
+.qaq-textarea{min-height:60px;resize:vertical;line-height:1.5}
+.qaq-input-row{display:flex;gap:8px;flex-wrap:wrap}
+.qaq-input-row .qaq-field{flex:1;min-width:calc(50% - 4px)}
+
+.qaq-sub-section{background:var(--card2);border-radius:8px;padding:10px;margin-bottom:8px;position:relative}
+.qaq-sub-section-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px}
+.qaq-sub-section-title{font-size:13px;font-weight:500}
+
+.qaq-tag{display:inline-flex;align-items:center;gap:3px;padding:3px 10px;background:var(--card3);border:1px solid var(--border);border-radius:20px;font-size:12px;margin:2px;cursor:pointer;transition:all 0.2s}
+.qaq-tag.selected{background:var(--accent);color:#2a3320;border-color:var(--accent)}
+.qaq-tag:active{transform:scale(0.95)}
+
+.qaq-modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:200;display:none;align-items:center;justify-content:center;padding:20px}
+.qaq-modal-overlay.show{display:flex}
+.qaq-modal{background:var(--bg);border:1px solid var(--border);border-radius:16px;max-width:500px;width:100%;max-height:85vh;overflow-y:auto;box-shadow:var(--shadow)}
+.qaq-modal-header{padding:16px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;background:var(--bg);border-radius:16px 16px 0 0;z-index:1}
+.qaq-modal-title{font-size:16px;font-weight:600}
+.qaq-modal-body{padding:16px}
+.qaq-modal-footer{padding:12px 16px;border-top:1px solid var(--border);display:flex;gap:8px;justify-content:flex-end;position:sticky;bottom:0;background:var(--bg);border-radius:0 0 16px 16px}
+
+.qaq-close-btn{width:28px;height:28px;border:none;background:var(--card2);border-radius:50%;color:var(--text);cursor:pointer;display:flex;align-items:center;justify-content:center}
+
+.qaq-slider-group{display:flex;align-items:center;gap:8px}
+.qaq-slider{flex:1;-webkit-appearance:none;height:4px;background:var(--border);border-radius:2px;outline:none}
+.qaq-slider::-webkit-slider-thumb{-webkit-appearance:none;width:18px;height:18px;background:var(--accent);border-radius:50%;cursor:pointer}
+.qaq-slider-val{width:50px}
+.qaq-slider-val input{width:100%;text-align:center}
+
+.qaq-preview-box{background:#1a1a1a;border-radius:8px;padding:12px;font-family:"Courier New",monospace;font-size:12px;white-space:pre-wrap;word-break:break-all;max-height:50vh;overflow-y:auto;color:#e0e0e0;line-height:1.5}
+
+.qaq-archive-item{display:flex;align-items:center;justify-content:space-between;padding:10px 12px;background:var(--card);border:1px solid var(--border);border-radius:8px;margin-bottom:6px}
+.qaq-archive-item-info{flex:1;min-width:0}
+.qaq-archive-item-name{font-size:13px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.qaq-archive-item-date{font-size:11px;opacity:0.5}
+.qaq-archive-item-actions{display:flex;gap:4px;flex-shrink:0;margin-left:8px}
+
+.qaq-inspiration-area{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:12px;margin-bottom:12px}
+.qaq-inspiration-result{min-height:30px;padding:8px;background:var(--card2);border-radius:8px;margin-top:8px;font-size:13px;line-height:1.8}
+
+.qaq-radio-group{display:flex;gap:0;border:1px solid var(--border);border-radius:8px;overflow:hidden}
+.qaq-radio-item{padding:6px 14px;font-size:13px;cursor:pointer;background:var(--card);transition:all 0.2s;border-right:1px solid var(--border)}
+.qaq-radio-item:last-child{border-right:none}
+.qaq-radio-item.active{background:var(--accent);color:#2a3320}
+
+.qaq-check-item{display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer;padding:4px 0}
+.qaq-checkbox{width:16px;height:16px;border:1.5px solid var(--border);border-radius:4px;display:flex;align-items:center;justify-content:center;transition:all 0.2s;flex-shrink:0}
+.qaq-check-item.checked .qaq-checkbox{background:var(--accent);border-color:var(--accent)}
+
+.qaq-toast{position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,0.8);color:#fff;padding:8px 20px;border-radius:20px;font-size:13px;z-index:300;opacity:0;transition:opacity 0.3s;pointer-events:none}
+.qaq-toast.show{opacity:1}
+
+.qaq-remove-field-btn{position:absolute;top:6px;right:6px;width:20px;height:20px;border-radius:50%;background:rgba(212,117,106,0.3);border:1px solid var(--danger);color:var(--danger);cursor:pointer;display:flex;align-items:center;justify-content:center;opacity:0;transition:opacity 0.2s}
+.qaq-sub-section:hover .qaq-remove-field-btn{opacity:1}
+
+svg.qaq-icon{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;flex-shrink:0}
+svg.qaq-icon-sm{width:12px;height:12px}
+
+.qaq-empty{text-align:center;padding:30px;opacity:0.4;font-size:13px}
+
+.qaq-subtabs{display:flex;gap:0;margin-bottom:12px;border:1px solid var(--border);border-radius:8px;overflow:hidden}
+.qaq-subtab{flex:1;text-align:center;padding:8px 0;font-size:13px;cursor:pointer;background:var(--card);transition:all 0.2s}
+.qaq-subtab.active{background:var(--accent);color:#2a3320;font-weight:600}
+
+@media(max-width:400px){
+.qaq-input-row .qaq-field{min-width:100%}
+}
+
+/* 简洁主题 */
+body.qaq-theme-light{
+--bg:#f5f5f5;--text:#1a1a1a;--card:rgba(0,0,0,0.04);--card2:rgba(0,0,0,0.06);--card3:rgba(0,0,0,0.1);--accent:#6b8f5e;--accent2:#5a7d4e;--danger:#c0392b;--border:rgba(0,0,0,0.12);--shadow:0 2px 12px rgba(0,0,0,0.08)
+}
+body.qaq-theme-light{background:var(--bg);color:var(--text)}
+body.qaq-theme-light .qaq-header{background:rgba(245,245,245,0.95)}
+body.qaq-theme-light .qaq-tabs{background:rgba(245,245,245,0.5)}
+body.qaq-theme-light .qaq-btn-primary{color:#fff}
+body.qaq-theme-light .qaq-subtab.active{color:#fff}
+body.qaq-theme-light .qaq-radio-item.active{color:#fff}
+body.qaq-theme-light .qaq-tag.selected{color:#fff}
+body.qaq-theme-light .qaq-modal{background:#f5f5f5}
+body.qaq-theme-light .qaq-modal-header{background:#f5f5f5}
+body.qaq-theme-light .qaq-modal-footer{background:#f5f5f5}
+body.qaq-theme-light .qaq-check-item.checked .qaq-checkbox svg{stroke:#fff}
+
+/* 夜间主题 */
+body.qaq-theme-dark{
+--bg:#1a1d21;--text:#d4d4d4;--card:rgba(255,255,255,0.05);--card2:rgba(255,255,255,0.07);--card3:rgba(255,255,255,0.12);--accent:#7a9a6a;--accent2:#6a8a5a;--danger:#c0392b;--border:rgba(255,255,255,0.1);--shadow:0 2px 12px rgba(0,0,0,0.3)
+}
+body.qaq-theme-dark{background:var(--bg);color:var(--text)}
+body.qaq-theme-dark .qaq-header{background:rgba(26,29,33,0.95)}
+body.qaq-theme-dark .qaq-tabs{background:rgba(26,29,33,0.5)}
+body.qaq-theme-dark .qaq-btn-primary{color:#1a1d21}
+body.qaq-theme-dark .qaq-subtab.active{color:#1a1d21}
+body.qaq-theme-dark .qaq-radio-item.active{color:#1a1d21}
+body.qaq-theme-dark .qaq-tag.selected{color:#1a1d21}
+body.qaq-theme-dark .qaq-modal{background:#1a1d21}
+body.qaq-theme-dark .qaq-modal-header{background:#1a1d21}
+body.qaq-theme-dark .qaq-modal-footer{background:#1a1d21}
+body.qaq-theme-dark .qaq-preview-box{background:#111315}
+
+</style>
+</head>
+<body>
+
+<header class="qaq-header">
+  <h1>Character Editor</h1>
+  <div class="qaq-header-actions">
+    <button class="qaq-btn qaq-btn-sm" onclick="qaqShowTheme()">
+      <svg class="qaq-icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+      主题
+    </button>
+    <button class="qaq-btn qaq-btn-sm" onclick="qaqShowNotice()">
+      <svg class="qaq-icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+      须知
+    </button>
+    <button class="qaq-btn qaq-btn-sm" onclick="qaqShowArchive()">
+      <svg class="qaq-icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 8v13H3V8"/><path d="M1 3h22v5H1z"/><path d="M10 12h4"/></svg>
+      存档
+    </button>
+  </div>
+</header>
+
+<div class="qaq-tabs">
+  <div class="qaq-tab active" data-tab="edit" onclick="qaqSwitchTab('edit')">人设编辑</div>
+  <div class="qaq-tab" data-tab="export" onclick="qaqSwitchTab('export')">生成导出</div>
+</div>
+
+<!-- EDIT PAGE -->
+<div id="qaq-page-edit" class="qaq-page active">
+  <div class="qaq-subtabs">
+    <div class="qaq-subtab active" id="qaq-subtab-char" onclick="qaqSwitchSubTab('char')">人设编辑</div>
+    <div class="qaq-subtab" id="qaq-subtab-world" onclick="qaqSwitchSubTab('world')">世界书编辑</div>
+  </div>
+
+  <div id="qaq-sub-char">
+    <!-- Inspiration Collision -->
+    <div class="qaq-inspiration-area">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+        <span style="font-weight:600;font-size:14px">灵感碰撞</span>
+        <div style="display:flex;gap:4px">
+          <button class="qaq-btn qaq-btn-xs" onclick="qaqShowInspirationSettings()">
+            <svg class="qaq-icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.32 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+            设置
+          </button>
+          <button class="qaq-btn qaq-btn-xs qaq-btn-primary" onclick="qaqCollide()">碰撞</button>
+        </div>
+      </div>
+      <div id="qaq-inspiration-tags" class="qaq-inspiration-result" style="color:rgba(255,255,254,0.4)">点击"碰撞"随机生成灵感标签</div>
+      <div style="display:flex;gap:4px;margin-top:8px" id="qaq-inspiration-btns" style="display:none">
+        <button class="qaq-btn qaq-btn-xs" id="qaq-apply-inspiration-btn" onclick="qaqApplyInspiration()" style="display:none">确定填入</button>
+        <button class="qaq-btn qaq-btn-xs" id="qaq-clear-inspiration-btn" onclick="qaqClearInspiration()" style="display:none">清除</button>
+      </div>
+    </div>
+
+    <div class="qaq-field" style="margin-bottom:12px">
+      <div class="qaq-field-label">灵感来源</div>
+      <textarea id="qaq-inspiration-source" class="qaq-textarea" rows="2" placeholder="灵感来源将在碰撞后自动填入..."></textarea>
+    </div>
+
+    <div id="qaq-char-sections"></div>
+
+    <button class="qaq-btn" onclick="qaqAddSection('char')" style="width:100%;justify-content:center;margin-top:8px">
+      <svg class="qaq-icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+      添加自定义大项
+    </button>
+  </div>
+
+  <div id="qaq-sub-world" style="display:none">
+    <div id="qaq-world-sections"></div>
+    <button class="qaq-btn" onclick="qaqAddSection('world')" style="width:100%;justify-content:center;margin-top:8px">
+      <svg class="qaq-icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+      添加自定义大项
+    </button>
+  </div>
+</div>
+
+<!-- EXPORT PAGE -->
+<div id="qaq-page-export" class="qaq-page">
+  <div class="qaq-section">
+    <div class="qaq-section-header" onclick="qaqToggleSection(this)">
+      <span class="qaq-section-title">
+        <svg class="qaq-icon qaq-chevron" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
+        导出设置
+      </span>
+    </div>
+    <div class="qaq-section-body">
+      <div class="qaq-field">
+        <div class="qaq-field-label">预览格式</div>
+        <div class="qaq-radio-group" id="qaq-format-group">
+          <div class="qaq-radio-item active" onclick="qaqSelectFormat('json',this)">JSON</div>
+          <div class="qaq-radio-item" onclick="qaqSelectFormat('yaml',this)">YAML</div>
+        </div>
+      </div>
+      <div class="qaq-field">
+        <div class="qaq-check-item" id="qaq-merge-check" onclick="qaqToggleCheck(this)">
+          <div class="qaq-checkbox"><svg class="qaq-icon-sm" viewBox="0 0 24 24" fill="none" stroke="#2a3320" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" style="display:none"><polyline points="20 6 9 17 4 12"/></svg></div>
+          世界书与人设合并到同一文档
+        </div>
+      </div>
+      <button class="qaq-btn qaq-btn-primary" onclick="qaqGeneratePreview()" style="width:100%;justify-content:center;margin-top:8px">生成预览</button>
+    </div>
+  </div>
+
+  <div class="qaq-section">
+    <div class="qaq-section-header" onclick="qaqToggleSection(this)">
+      <span class="qaq-section-title">
+        <svg class="qaq-icon qaq-chevron" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
+        预览
+      </span>
+    </div>
+    <div class="qaq-section-body">
+      <div id="qaq-preview-content" class="qaq-preview-box">点击上方"生成预览"查看结果</div>
+    </div>
+  </div>
+
+  <div class="qaq-section">
+    <div class="qaq-section-header" onclick="qaqToggleSection(this)">
+      <span class="qaq-section-title">
+        <svg class="qaq-icon qaq-chevron" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
+        导出操作
+      </span>
+    </div>
+    <div class="qaq-section-body">
+      <div style="font-size:12px;opacity:0.6;margin-bottom:8px">复制到剪贴板</div>
+      <div style="display:flex;flex-wrap:wrap;gap:6px">
+        <button class="qaq-btn qaq-btn-sm" onclick="qaqCopyClip('char')">复制人设</button>
+        <button class="qaq-btn qaq-btn-sm" onclick="qaqCopyClip('world')">复制世界书</button>
+        <button class="qaq-btn qaq-btn-sm" onclick="qaqCopyClip('all')">复制全部</button>
+      </div>
+      <div style="font-size:12px;opacity:0.6;margin:12px 0 8px">下载文件</div>
+      <div style="display:flex;flex-wrap:wrap;gap:6px">
+        <button class="qaq-btn qaq-btn-sm" onclick="qaqDownload('json')">JSON</button>
+        <button class="qaq-btn qaq-btn-sm" onclick="qaqDownload('yaml')">YAML</button>
+        <button class="qaq-btn qaq-btn-sm" onclick="qaqDownload('txt')">TXT</button>
+        <button class="qaq-btn qaq-btn-sm" onclick="qaqDownload('docx')">DOCX</button>
+      </div>
+      <div style="font-size:12px;opacity:0.6;margin:12px 0 8px">存档</div>
+      <div style="display:flex;flex-wrap:wrap;gap:6px">
+        <button class="qaq-btn qaq-btn-sm qaq-btn-primary" onclick="qaqSaveArchive('char')">存档人设</button>
+        <button class="qaq-btn qaq-btn-sm" onclick="qaqSaveArchive('world')">存档世界书</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- NOTICE MODAL -->
+<div class="qaq-modal-overlay" id="qaq-modal-notice">
+  <div class="qaq-modal">
+    <div class="qaq-modal-header">
+      <span class="qaq-modal-title">使用须知</span>
+      <button class="qaq-close-btn" onclick="qaqCloseNotice()"><svg class="qaq-icon" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+    </div>
+    <div class="qaq-modal-body" style="font-size:13px;line-height:2">
+      <p style="font-weight:600;font-size:15px;margin-bottom:10px">欢迎使用人设编辑器-轻量版!</p>
+      <p>作者：qaq</p>
+      <p style="margin-top:6px">非常感谢我的好朋友们对此工具的支持和建议以及测试!</p>
+      <p style="margin-top:6px">此工具为免费分享，严禁二改、倒卖等行为。</p>
+      <p style="margin-top:16px;color:var(--danger);font-weight:600">禁止抄袭、二改、模仿其他老师的创意及设定!</p>
+      <p style="margin-top:6px">导出的人设请不要删掉第一行注释。</p>
+    </div>
+    <div class="qaq-modal-footer">
+      <div class="qaq-check-item" id="qaq-no-more-notice" onclick="qaqToggleCheck(this)">
+        <div class="qaq-checkbox"><svg class="qaq-icon-sm" viewBox="0 0 24 24" fill="none" stroke="#2a3320" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" style="display:none"><polyline points="20 6 9 17 4 12"/></svg></div>
+        不再提示
+      </div>
+      <button class="qaq-btn qaq-btn-primary" onclick="qaqCloseNotice()">知道了</button>
+    </div>
+  </div>
+</div>
+
+<!-- ARCHIVE MODAL -->
+<div class="qaq-modal-overlay" id="qaq-modal-archive">
+  <div class="qaq-modal">
+    <div class="qaq-modal-header">
+      <span class="qaq-modal-title">存档管理</span>
+      <button class="qaq-close-btn" onclick="qaqCloseModal('qaq-modal-archive')"><svg class="qaq-icon" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+    </div>
+    <div class="qaq-modal-body">
+      <div class="qaq-subtabs" style="margin-bottom:12px">
+        <div class="qaq-subtab active" id="qaq-archive-tab-char" onclick="qaqSwitchArchiveTab('char')">人设存档</div>
+        <div class="qaq-subtab" id="qaq-archive-tab-world" onclick="qaqSwitchArchiveTab('world')">世界书存档</div>
+      </div>
+      <div id="qaq-archive-list-char"></div>
+      <div id="qaq-archive-list-world" style="display:none"></div>
+      <div style="margin-top:12px;display:flex;gap:6px;flex-wrap:wrap">
+        <button class="qaq-btn qaq-btn-xs" onclick="qaqExportAllArchives('char')">一键导出全部人设</button>
+        <button class="qaq-btn qaq-btn-xs" onclick="qaqExportAllArchives('world')">一键导出全部世界书</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- INSPIRATION SETTINGS MODAL -->
+<div class="qaq-modal-overlay" id="qaq-modal-inspiration">
+  <div class="qaq-modal">
+    <div class="qaq-modal-header">
+      <span class="qaq-modal-title">灵感碰撞设置</span>
+      <button class="qaq-close-btn" onclick="qaqCloseModal('qaq-modal-inspiration')"><svg class="qaq-icon" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+    </div>
+    <div class="qaq-modal-body">
+      <div class="qaq-field">
+        <div class="qaq-field-label">每次碰撞标签数量</div>
+        <div class="qaq-slider-group">
+          <input type="range" class="qaq-slider" min="1" max="15" value="5" id="qaq-collide-count-slider" oninput="document.getElementById('qaq-collide-count-val').value=this.value">
+          <div class="qaq-slider-val"><input type="number" class="qaq-input" id="qaq-collide-count-val" value="5" min="1" max="15" style="padding:4px" oninput="document.getElementById('qaq-collide-count-slider').value=this.value"></div>
+        </div>
+      </div>
+      <div class="qaq-field">
+        <div class="qaq-field-label">标签启用概率 (%)</div>
+        <div class="qaq-slider-group">
+          <input type="range" class="qaq-slider" min="10" max="100" value="70" id="qaq-tag-prob-slider" oninput="document.getElementById('qaq-tag-prob-val').value=this.value">
+          <div class="qaq-slider-val"><input type="number" class="qaq-input" id="qaq-tag-prob-val" value="70" min="10" max="100" style="padding:4px" oninput="document.getElementById('qaq-tag-prob-slider').value=this.value"></div>
+        </div>
+      </div>
+      <div class="qaq-field">
+        <div class="qaq-field-label">内置标签 (点击切换启用/禁用)</div>
+        <div id="qaq-builtin-tags-box" style="max-height:180px;overflow-y:auto;padding:4px 0"></div>
+      </div>
+      <div class="qaq-field">
+        <div class="qaq-field-label">自定义标签</div>
+        <div id="qaq-custom-tags-box" style="margin-bottom:6px"></div>
+        <div style="display:flex;gap:4px">
+          <input type="text" class="qaq-input" id="qaq-new-custom-tag" placeholder="输入自定义标签..." style="flex:1">
+          <button class="qaq-btn qaq-btn-xs qaq-btn-primary" onclick="qaqAddCustomTag()">添加</button>
+        </div>
+      </div>
+    </div>
+    <div class="qaq-modal-footer">
+      <button class="qaq-btn qaq-btn-primary" onclick="qaqCloseModal('qaq-modal-inspiration')">确定</button>
+    </div>
+  </div>
+</div>
+
+<!-- ADD SECTION MODAL -->
+<div class="qaq-modal-overlay" id="qaq-modal-add-section">
+  <div class="qaq-modal" style="max-width:380px">
+    <div class="qaq-modal-header">
+      <span class="qaq-modal-title" id="qaq-add-section-title">添加大项</span>
+      <button class="qaq-close-btn" onclick="qaqCloseModal('qaq-modal-add-section')"><svg class="qaq-icon" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+    </div>
+    <div class="qaq-modal-body">
+      <div class="qaq-field">
+        <div class="qaq-field-label">大项名称</div>
+        <input type="text" class="qaq-input" id="qaq-new-section-name" placeholder="输入名称...">
+      </div>
+    </div>
+    <div class="qaq-modal-footer">
+      <button class="qaq-btn" onclick="qaqCloseModal('qaq-modal-add-section')">取消</button>
+      <button class="qaq-btn qaq-btn-primary" id="qaq-confirm-add-section">确定</button>
+    </div>
+  </div>
+</div>
+
+<!-- ADD FIELD MODAL -->
+<div class="qaq-modal-overlay" id="qaq-modal-add-field">
+  <div class="qaq-modal" style="max-width:380px">
+    <div class="qaq-modal-header">
+      <span class="qaq-modal-title">添加小项</span>
+      <button class="qaq-close-btn" onclick="qaqCloseModal('qaq-modal-add-field')"><svg class="qaq-icon" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+    </div>
+    <div class="qaq-modal-body">
+      <div class="qaq-field">
+        <div class="qaq-field-label">小项名称</div>
+        <input type="text" class="qaq-input" id="qaq-new-field-name" placeholder="输入名称...">
+      </div>
+      <div class="qaq-field">
+        <div class="qaq-field-label">类型</div>
+        <div class="qaq-radio-group" id="qaq-field-type-group">
+          <div class="qaq-radio-item" onclick="qaqSelectFieldType('input',this)">单行输入</div>
+          <div class="qaq-radio-item active" onclick="qaqSelectFieldType('textarea',this)">多行文本</div>
+        </div>
+      </div>
+    </div>
+    <div class="qaq-modal-footer">
+      <button class="qaq-btn" onclick="qaqCloseModal('qaq-modal-add-field')">取消</button>
+      <button class="qaq-btn qaq-btn-primary" id="qaq-confirm-add-field">确定</button>
+    </div>
+  </div>
+</div>
+
+<!-- SAVE ARCHIVE MODAL -->
+<div class="qaq-modal-overlay" id="qaq-modal-save-archive">
+  <div class="qaq-modal" style="max-width:380px">
+    <div class="qaq-modal-header">
+      <span class="qaq-modal-title">存档</span>
+      <button class="qaq-close-btn" onclick="qaqCloseModal('qaq-modal-save-archive')"><svg class="qaq-icon" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+    </div>
+    <div class="qaq-modal-body">
+      <div class="qaq-field">
+        <div class="qaq-field-label">存档名称</div>
+        <input type="text" class="qaq-input" id="qaq-archive-name-input" placeholder="输入存档名称...">
+      </div>
+    </div>
+    <div class="qaq-modal-footer">
+      <button class="qaq-btn" onclick="qaqCloseModal('qaq-modal-save-archive')">取消</button>
+      <button class="qaq-btn qaq-btn-primary" id="qaq-confirm-save-archive">确定</button>
+    </div>
+  </div>
+</div>
+
+<!-- THEME MODAL -->
+<div class="qaq-modal-overlay" id="qaq-modal-theme">
+  <div class="qaq-modal" style="max-width:340px">
+    <div class="qaq-modal-header">
+      <span class="qaq-modal-title">主题切换</span>
+      <button class="qaq-close-btn" onclick="qaqCloseModal('qaq-modal-theme')"><svg class="qaq-icon" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+    </div>
+    <div class="qaq-modal-body">
+      <div id="qaq-theme-list" style="display:flex;flex-direction:column;gap:6px"></div>
+    </div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="qaq-toast" id="qaq-toast"></div>
+
+<script>
+// ===================== CORE DATA =====================
+const qaqBuiltinTags=[
+"男性","女性","非二元性别","温柔","冷漠","暴躁","开朗","内向","腹黑","傲娇",
+"家庭幸福","家庭破碎","单亲家庭","孤儿","家庭冷漠","学生","教师","医生","军人","艺术家",
+"程序员","侦探","厨师","作家","商人","善良","执着","自卑","偏执","慵懒",
+"英俊","美丽","平凡","伤疤","异瞳","银发","黑长直","短发","高挑","娇小",
+"古代背景","现代都市","末世废土","奇幻魔法","科幻未来","校园","职场","宫廷","江湖","异世界"
+];
+
+let qaqCustomTags=JSON.parse(localStorage.getItem('qaq_custom_tags')||'[]');
+let qaqCurrentCollideResult=[];
+let qaqCurrentFormat='json';
+let qaqMergeExport=false;
+let qaqNewFieldType='textarea';
+let qaqPendingFieldSectionId='';
+let qaqPendingFieldType='';
+let qaqPendingSectionType='';
+
+let qaqIdC=0;
+function qaqId(){return 'q'+(Date.now().toString(36))+(qaqIdC++)}
+
+function qaqDefaultChar(){
+  return [
+    {id:qaqId(),title:"核心设定提示词",fields:[
+      {id:qaqId(),label:"核心提示词",type:"textarea",value:"你必须沉浸式扮演他",placeholder:""}
+    ]},
+    {id:qaqId(),title:"人设关键词",fields:[
+      {id:qaqId(),label:"关键词",type:"textarea",value:"",placeholder:"他的性格之类的关键词"}
+    ]},
+    {id:qaqId(),title:"基础信息",fields:[
+      {id:qaqId(),label:"姓名",type:"input",value:"",placeholder:""},
+      {id:qaqId(),label:"昵称",type:"input",value:"",placeholder:""},
+      {id:qaqId(),label:"性别",type:"input",value:"",placeholder:""},
+      {id:qaqId(),label:"年龄",type:"input",value:"",placeholder:""},
+      {id:qaqId(),label:"职业",type:"input",value:"",placeholder:""},
+      {id:qaqId(),label:"MBTI",type:"input",value:"",placeholder:""},
+      {id:qaqId(),label:"生日",type:"input",value:"",placeholder:""},
+      {id:qaqId(),label:"星座",type:"input",value:"",placeholder:""},
+      {id:qaqId(),label:"身高",type:"input",value:"",placeholder:""},
+      {id:qaqId(),label:"体重",type:"input",value:"",placeholder:""}
+    ]},
+    {id:qaqId(),title:"外表",fields:[
+      {id:qaqId(),label:"五官",type:"textarea",value:"",placeholder:""},
+      {id:qaqId(),label:"身材",type:"textarea",value:"",placeholder:""},
+      {id:qaqId(),label:"常佩戴的小物件",type:"textarea",value:"",placeholder:""},
+      {id:qaqId(),label:"日常穿着",type:"textarea",value:"",placeholder:""},
+      {id:qaqId(),label:"特征",type:"textarea",value:"",placeholder:""},
+      {id:qaqId(),label:"给别人的感觉",type:"textarea",value:"",placeholder:""}
+    ]},
+    {id:qaqId(),title:"性格",fields:[
+      {id:qaqId(),label:"表层性格",type:"textarea",value:"",placeholder:"表层性格和生成原因以及典型场景"},
+      {id:qaqId(),label:"深层性格",type:"textarea",value:"",placeholder:"深层性格和生成原因以及典型场景"},
+      {id:qaqId(),label:"性格间的矛盾点",type:"textarea",value:"",placeholder:"矛盾点以及生成原因"}
+    ]},
+    {id:qaqId(),title:"过往经历",fields:[
+      {id:qaqId(),label:"童年",type:"textarea",value:"",placeholder:"童年经历及期间的性格行为特点"},
+      {id:qaqId(),label:"少年",type:"textarea",value:"",placeholder:"少年经历及期间的性格行为特点"},
+      {id:qaqId(),label:"现在",type:"textarea",value:"",placeholder:"现在的性格行为特点、要解决的问题等"}
+    ]},
+    {id:qaqId(),title:"情境表现",fields:[
+      {id:qaqId(),label:"情境与行为",type:"textarea",value:"",placeholder:"当他处于什么样的境地，会做出什么行为，说出什么语言"}
+    ]},
+    {id:qaqId(),title:"喜好与厌恶",fields:[
+      {id:qaqId(),label:"喜欢的食物",type:"textarea",value:"",placeholder:""},
+      {id:qaqId(),label:"讨厌的食物",type:"textarea",value:"",placeholder:""},
+      {id:qaqId(),label:"喜欢的气味",type:"textarea",value:"",placeholder:""},
+      {id:qaqId(),label:"讨厌的气味",type:"textarea",value:"",placeholder:""},
+      {id:qaqId(),label:"喜欢的事情",type:"textarea",value:"",placeholder:""},
+      {id:qaqId(),label:"讨厌的事情",type:"textarea",value:"",placeholder:""},
+      {id:qaqId(),label:"喜欢的物品",type:"textarea",value:"",placeholder:""},
+      {id:qaqId(),label:"讨厌的物品",type:"textarea",value:"",placeholder:""}
+    ]},
+    {id:qaqId(),title:"人际关系",fields:[
+      {id:qaqId(),label:"家庭成员",type:"textarea",value:"",placeholder:"简单介绍、与他的关系、如何相识如何陪伴"},
+      {id:qaqId(),label:"亲戚",type:"textarea",value:"",placeholder:""},
+      {id:qaqId(),label:"友人",type:"textarea",value:"",placeholder:""},
+      {id:qaqId(),label:"师徒",type:"textarea",value:"",placeholder:""},
+      {id:qaqId(),label:"敌人",type:"textarea",value:"",placeholder:""}
+    ]},
+    {id:qaqId(),title:"NSFW",fields:[
+      {id:qaqId(),label:"XP",type:"textarea",value:"",placeholder:""},
+      {id:qaqId(),label:"亲密行为",type:"textarea",value:"",placeholder:""},
+      {id:qaqId(),label:"亲密形式",type:"textarea",value:"",placeholder:""},
+      {id:qaqId(),label:"亲密语言",type:"textarea",value:"",placeholder:""}
+    ]},
+    {id:qaqId(),title:"其他设定",fields:[
+      {id:qaqId(),label:"必须遵守的事项",type:"textarea",value:"",placeholder:""},
+      {id:qaqId(),label:"禁止出现的事项",type:"textarea",value:"",placeholder:""}
+    ]}
+  ];
+}
+
+function qaqDefaultWorld(){
+  return [
+    {id:qaqId(),title:"世界观",fields:[
+      {id:qaqId(),label:"世界观设定",type:"textarea",value:"",placeholder:"描述这个世界的基本设定..."}
+    ]},
+    {id:qaqId(),title:"其他补充设定",fields:[
+      {id:qaqId(),label:"补充设定",type:"textarea",value:"",placeholder:""}
+    ]},
+    {id:qaqId(),title:"语言行为模式",fields:[
+      {id:qaqId(),label:"语言行为模式",type:"textarea",value:"",placeholder:"角色的语言风格、行为模式描述..."}
+    ]}
+  ];
+}
+
+let qaqCharData, qaqWorldData;
+
+function qaqLoadAllData(){
+  try{
+    const c=localStorage.getItem('qaq_char_data');
+    qaqCharData=c?JSON.parse(c):qaqDefaultChar();
+  }catch(e){qaqCharData=qaqDefaultChar()}
+  try{
+    const w=localStorage.getItem('qaq_world_data');
+    qaqWorldData=w?JSON.parse(w):qaqDefaultWorld();
+  }catch(e){qaqWorldData=qaqDefaultWorld()}
+}
+
+function qaqSaveAllData(){
+  qaqCollectAll();
+  try{
+    localStorage.setItem('qaq_char_data',JSON.stringify(qaqCharData));
+    localStorage.setItem('qaq_world_data',JSON.stringify(qaqWorldData));
+  }catch(e){qaqToast('存储空间不足')}
+}
+
+function qaqCollectAll(){
+  [qaqCharData,qaqWorldData].forEach(dataArr=>{
+    dataArr.forEach(sec=>{
+      sec.fields.forEach(f=>{
+        const el=document.getElementById(f.id);
+        if(el)f.value=el.value;
+      });
+    });
+  });
+}
+
+let qaqAutoSaveT;
+function qaqAutoSave(){clearTimeout(qaqAutoSaveT);qaqAutoSaveT=setTimeout(()=>qaqSaveAllData(),800)}
+
+// ===================== UTILITY =====================
+function qaqEsc(s){return s==null?'':String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')}
+function qaqToast(m){const t=document.getElementById('qaq-toast');t.textContent=m;t.classList.add('show');clearTimeout(t._t);t._t=setTimeout(()=>t.classList.remove('show'),2000)}
+function qaqCloseModal(id){document.getElementById(id).classList.remove('show')}
+
+// ===================== RENDER =====================
+function qaqRender(type){
+  const data=type==='char'?qaqCharData:qaqWorldData;
+  const container=document.getElementById('qaq-'+type+'-sections');
+  container.innerHTML='';
+  data.forEach(sec=>{
+    container.appendChild(qaqBuildSection(sec,type));
+  });
+}
+
+function qaqBuildSection(sec,type){
+  const div=document.createElement('div');
+  div.className='qaq-section collapsed';
+  div.dataset.sid=sec.id;
+
+  const hdr=document.createElement('div');
+  hdr.className='qaq-section-header';
+  hdr.onclick=function(e){if(!e.target.closest('.qaq-section-actions'))div.classList.toggle('collapsed')};
+
+  hdr.innerHTML=`
+    <span class="qaq-section-title">
+      <svg class="qaq-icon qaq-chevron" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
+      ${qaqEsc(sec.title)}
+    </span>
+    <div class="qaq-section-actions">
+      <button class="qaq-btn qaq-btn-xs" data-action="add-field">
+        <svg class="qaq-icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        小项
+      </button>
+      <button class="qaq-btn qaq-btn-xs qaq-btn-danger" data-action="del-section">
+        <svg class="qaq-icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg>
+      </button>
+    </div>`;
+
+  hdr.querySelector('[data-action="add-field"]').onclick=function(e){e.stopPropagation();qaqShowAddField(type,sec.id)};
+  hdr.querySelector('[data-action="del-section"]').onclick=function(e){e.stopPropagation();qaqDelSection(type,sec.id)};
+
+  div.appendChild(hdr);
+
+  const body=document.createElement('div');
+  body.className='qaq-section-body';
+
+  sec.fields.forEach(f=>{
+    body.appendChild(qaqBuildField(f,type,sec.id));
+  });
+
+  div.appendChild(body);
+  return div;
+}
+
+function qaqBuildField(f,type,secId){
+  const wrap=document.createElement('div');
+  wrap.className='qaq-sub-section';
+  wrap.dataset.fid=f.id;
+  wrap.style.position='relative';
+
+  const hdr=document.createElement('div');
+  hdr.className='qaq-sub-section-header';
+  hdr.innerHTML=`<span class="qaq-sub-section-title">${qaqEsc(f.label)}</span>`;
+  wrap.appendChild(hdr);
+
+  let inputEl;
+  if(f.type==='textarea'){
+    inputEl=document.createElement('textarea');
+    inputEl.className='qaq-textarea';
+    inputEl.rows=2;
+  }else{
+    inputEl=document.createElement('input');
+    inputEl.type='text';
+    inputEl.className='qaq-input';
+  }
+  inputEl.id=f.id;
+  inputEl.value=f.value||'';
+  inputEl.placeholder=f.placeholder||'';
+  inputEl.oninput=qaqAutoSave;
+  wrap.appendChild(inputEl);
+
+  const delBtn=document.createElement('button');
+  delBtn.className='qaq-remove-field-btn';
+  delBtn.innerHTML='<svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>';
+  delBtn.onclick=function(){qaqDelField(type,secId,f.id)};
+  wrap.appendChild(delBtn);
+
+  return wrap;
+}
+
+// ===================== SECTION / FIELD MANAGEMENT =====================
+function qaqToggleSection(hdr){hdr.parentElement.classList.toggle('collapsed')}
+
+function qaqDelSection(type,secId){
+  if(!confirm('确定删除此大项及其所有小项?'))return;
+  qaqCollectAll();
+  if(type==='char')qaqCharData=qaqCharData.filter(s=>s.id!==secId);
+  else qaqWorldData=qaqWorldData.filter(s=>s.id!==secId);
+  qaqSaveAllData();
+  qaqRender(type);
+}
+
+function qaqDelField(type,secId,fid){
+  qaqCollectAll();
+  const data=type==='char'?qaqCharData:qaqWorldData;
+  const sec=data.find(s=>s.id===secId);
+  if(sec){
+    sec.fields=sec.fields.filter(f=>f.id!==fid);
+    qaqSaveAllData();
+    qaqRender(type);
+  }
+}
+
+function qaqShowAddField(type,secId){
+  qaqPendingFieldSectionId=secId;
+  qaqPendingFieldType=type;
+  qaqNewFieldType='textarea';
+  document.getElementById('qaq-new-field-name').value='';
+  const grp=document.getElementById('qaq-field-type-group');
+  Array.from(grp.children).forEach((c,i)=>{c.classList.toggle('active',i===1)});
+  document.getElementById('qaq-confirm-add-field').onclick=function(){
+    const name=document.getElementById('qaq-new-field-name').value.trim();
+    if(!name){qaqToast('请输入名称');return}
+    qaqCollectAll();
+    const data=qaqPendingFieldType==='char'?qaqCharData:qaqWorldData;
+    const sec=data.find(s=>s.id===qaqPendingFieldSectionId);
+    if(sec){
+      sec.fields.push({id:qaqId(),label:name,type:qaqNewFieldType,value:'',placeholder:''});
+      qaqSaveAllData();
+      qaqRender(qaqPendingFieldType);
+    }
+    qaqCloseModal('qaq-modal-add-field');
+  };
+  document.getElementById('qaq-modal-add-field').classList.add('show');
+}
+
+function qaqSelectFieldType(t,el){
+  qaqNewFieldType=t;
+  Array.from(el.parentElement.children).forEach(c=>c.classList.remove('active'));
+  el.classList.add('active');
+}
+
+function qaqAddSection(type){
+  qaqPendingSectionType=type;
+  document.getElementById('qaq-add-section-title').textContent=type==='char'?'添加人设大项':'添加世界书大项';
+  document.getElementById('qaq-new-section-name').value='';
+  document.getElementById('qaq-confirm-add-section').onclick=function(){
+    const name=document.getElementById('qaq-new-section-name').value.trim();
+    if(!name){qaqToast('请输入名称');return}
+    qaqCollectAll();
+    const newSec={id:qaqId(),title:name,fields:[{id:qaqId(),label:'内容',type:'textarea',value:'',placeholder:''}]};
+    if(qaqPendingSectionType==='char')qaqCharData.push(newSec);
+    else qaqWorldData.push(newSec);
+    qaqSaveAllData();
+    qaqRender(qaqPendingSectionType);
+    qaqCloseModal('qaq-modal-add-section');
+  };
+  document.getElementById('qaq-modal-add-section').classList.add('show');
+}
+
+// ===================== TABS =====================
+function qaqSwitchTab(tab){
+  document.querySelectorAll('.qaq-tab').forEach(t=>t.classList.remove('active'));
+  document.querySelector(`.qaq-tab[data-tab="${tab}"]`).classList.add('active');
+  document.querySelectorAll('.qaq-page').forEach(p=>p.classList.remove('active'));
+  document.getElementById('qaq-page-'+tab).classList.add('active');
+  if(tab==='export')qaqCollectAll();
+}
+
+function qaqSwitchSubTab(sub){
+  document.getElementById('qaq-subtab-char').classList.toggle('active',sub==='char');
+  document.getElementById('qaq-subtab-world').classList.toggle('active',sub==='world');
+  document.getElementById('qaq-sub-char').style.display=sub==='char'?'':'none';
+  document.getElementById('qaq-sub-world').style.display=sub==='world'?'':'none';
+  if(sub==='char')qaqCollectAll();
+  if(sub==='world')qaqCollectAll();
+}
+
+// ===================== INSPIRATION =====================
+function qaqShowInspirationSettings(){
+  qaqRenderBuiltinTags();
+  qaqRenderCustomTags();
+  document.getElementById('qaq-modal-inspiration').classList.add('show');
+}
+
+function qaqRenderBuiltinTags(){
+  const box=document.getElementById('qaq-builtin-tags-box');
+  box.innerHTML='';
+  qaqBuiltinTags.forEach(tag=>{
+    const el=document.createElement('span');
+    el.className='qaq-tag selected';
+    el.textContent=tag;
+    el.onclick=function(){this.classList.toggle('selected')};
+    box.appendChild(el);
+  });
+}
+
+function qaqRenderCustomTags(){
+  const box=document.getElementById('qaq-custom-tags-box');
+  box.innerHTML='';
+  qaqCustomTags.forEach((tag,i)=>{
+    const el=document.createElement('span');
+    el.className='qaq-tag selected';
+    el.textContent=tag;
+    const x=document.createElement('span');
+    x.style.cssText='margin-left:4px;cursor:pointer;display:inline-flex';
+    x.innerHTML='<svg viewBox="0 0 24 24" width="10" height="10" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>';
+    x.onclick=function(e){e.stopPropagation();qaqCustomTags.splice(i,1);localStorage.setItem('qaq_custom_tags',JSON.stringify(qaqCustomTags));qaqRenderCustomTags()};
+    el.appendChild(x);
+    el.onclick=function(e){if(e.target===x||x.contains(e.target))return;this.classList.toggle('selected')};
+    box.appendChild(el);
+  });
+}
+
+function qaqAddCustomTag(){
+  const inp=document.getElementById('qaq-new-custom-tag');
+  const v=inp.value.trim();
+  if(!v)return;
+  qaqCustomTags.push(v);
+  localStorage.setItem('qaq_custom_tags',JSON.stringify(qaqCustomTags));
+  inp.value='';
+  qaqRenderCustomTags();
+}
+
+function qaqCollide(){
+  const count=parseInt(document.getElementById('qaq-collide-count-slider').value)||5;
+  const prob=parseInt(document.getElementById('qaq-tag-prob-slider').value)||70;
+
+  let pool=[];
+  const builtinBox=document.getElementById('qaq-builtin-tags-box');
+  if(builtinBox.children.length>0){
+    Array.from(builtinBox.children).forEach((el,i)=>{if(el.classList.contains('selected'))pool.push(qaqBuiltinTags[i])});
+  }else{
+    pool=[...qaqBuiltinTags];
+  }
+  const customBox=document.getElementById('qaq-custom-tags-box');
+  if(customBox.children.length>0){
+    Array.from(customBox.children).forEach((el,i)=>{if(el.classList.contains('selected')&&qaqCustomTags[i])pool.push(qaqCustomTags[i])});
+  }else{
+    pool=pool.concat(qaqCustomTags);
+  }
+
+  if(pool.length===0){qaqToast('没有可用标签');return}
+
+  let candidates=pool.filter(()=>Math.random()*100<prob);
+  if(candidates.length===0)candidates=[pool[Math.floor(Math.random()*pool.length)]];
+
+  let result=[];
+  const src=[...candidates];
+  const n=Math.min(count,src.length);
+  for(let i=0;i<n;i++){
+    const idx=Math.floor(Math.random()*src.length);
+    result.push(src.splice(idx,1)[0]);
+  }
+
+  qaqCurrentCollideResult=result;
+  const box=document.getElementById('qaq-inspiration-tags');
+  box.style.color='';
+  box.innerHTML=result.map(t=>`<span class="qaq-tag selected">${qaqEsc(t)}</span>`).join(' ');
+  document.getElementById('qaq-apply-inspiration-btn').style.display='';
+  document.getElementById('qaq-clear-inspiration-btn').style.display='';
+}
+
+function qaqApplyInspiration(){
+  if(!qaqCurrentCollideResult.length)return;
+  const el=document.getElementById('qaq-inspiration-source');
+  const existing=el.value.trim();
+  const nv=qaqCurrentCollideResult.join(' / ');
+  el.value=existing?(existing+'\n'+nv):nv;
+  localStorage.setItem('qaq_inspiration_source',el.value);
+  qaqToast('已填入灵感来源');
+}
+
+function qaqClearInspiration(){
+  qaqCurrentCollideResult=[];
+  const box=document.getElementById('qaq-inspiration-tags');
+  box.innerHTML='点击"碰撞"随机生成灵感标签';
+  box.style.color='rgba(255,255,254,0.4)';
+  document.getElementById('qaq-apply-inspiration-btn').style.display='none';
+  document.getElementById('qaq-clear-inspiration-btn').style.display='none';
+}
+
+// ===================== TOGGLE CHECK =====================
+function qaqToggleCheck(el){
+  el.classList.toggle('checked');
+  const svg=el.querySelector('.qaq-checkbox svg');
+  if(svg)svg.style.display=el.classList.contains('checked')?'':'none';
+  if(el.id==='qaq-merge-check')qaqMergeExport=el.classList.contains('checked');
+}
+
+// ===================== EXPORT =====================
+function qaqSelectFormat(fmt,el){
+  qaqCurrentFormat=fmt;
+  Array.from(el.parentElement.children).forEach(c=>c.classList.remove('active'));
+  el.classList.add('active');
+}
+
+function qaqBuildExport(includeChar,includeWorld){
+  qaqCollectAll();
+  const d={_comment:"qaq character editor"};
+  if(includeChar){
+    const src=document.getElementById('qaq-inspiration-source');
+    if(src&&src.value.trim())d['灵感来源']=src.value.trim();
+    d['人设']={};
+    qaqCharData.forEach(sec=>{
+      if(sec.fields.length===1){
+        d['人设'][sec.title]=sec.fields[0].value;
+      }else{
+        const o={};
+        sec.fields.forEach(f=>{o[f.label]=f.value});
+        d['人设'][sec.title]=o;
+      }
+    });
+  }
+  if(includeWorld){
+    d['世界书']={};
+    qaqWorldData.forEach(sec=>{
+      if(sec.fields.length===1){
+        d['世界书'][sec.title]=sec.fields[0].value;
+      }else{
+        const o={};
+        sec.fields.forEach(f=>{o[f.label]=f.value});
+        d['世界书'][sec.title]=o;
+      }
+    });
+  }
+  return d;
+}
+
+function qaqToJSON(d){return'// qaq character editor\n'+JSON.stringify(d,null,2)}
+
+function qaqToYAML(d){
+  const lines=['# qaq character editor'];
+  function walk(obj,ind){
+    if(obj==null)return;
+    if(typeof obj==='string'){
+      if(obj.indexOf('\n')>=0){
+        lines[lines.length-1]+=' |';
+        obj.split('\n').forEach(l=>lines.push(ind+'  '+l));
+      }else{
+        lines[lines.length-1]+=' '+JSON.stringify(obj);
+      }
+      return;
+    }
+    if(typeof obj==='object'){
+      Object.keys(obj).forEach(k=>{
+        if(k==='_comment')return;
+        lines.push(ind+JSON.stringify(k)+':');
+        walk(obj[k],ind+'  ');
+      });
+    }
+  }
+  const clean={...d};delete clean._comment;
+  walk(clean,'');
+  return lines.join('\n');
+}
+
+function qaqToTxt(d){
+  const lines=['// qaq character editor',''];
+  function flat(obj,pf){
+    if(typeof obj==='string'){lines.push(pf+obj);lines.push('');return}
+    if(typeof obj==='object'&&obj){
+      Object.keys(obj).forEach(k=>{
+        if(k==='_comment')return;
+        lines.push(pf+'['+k+']');
+        flat(obj[k],pf+'  ');
+      });
+    }
+  }
+  flat(d,'');
+  return lines.join('\n');
+}
+
+function qaqGeneratePreview(){
+  const d=qaqBuildExport(true,qaqMergeExport);
+  document.getElementById('qaq-preview-content').textContent=qaqCurrentFormat==='json'?qaqToJSON(d):qaqToYAML(d);
+}
+
+function qaqCopyClip(what){
+  let d;
+  if(what==='char')d=qaqBuildExport(true,false);
+  else if(what==='world')d=qaqBuildExport(false,true);
+  else d=qaqBuildExport(true,true);
+  const text=qaqCurrentFormat==='json'?qaqToJSON(d):qaqToYAML(d);
+  if(navigator.clipboard){
+    navigator.clipboard.writeText(text).then(()=>qaqToast('已复制')).catch(()=>qaqFallbackCopy(text));
+  }else qaqFallbackCopy(text);
+}
+
+function qaqFallbackCopy(text){
+  const ta=document.createElement('textarea');ta.value=text;ta.style.cssText='position:fixed;left:-9999px';
+  document.body.appendChild(ta);ta.select();
+  try{document.execCommand('copy');qaqToast('已复制')}catch(e){qaqToast('复制失败')}
+  document.body.removeChild(ta);
+}
+
+function qaqGetCharName(){
+  const sec=qaqCharData.find(s=>s.title==='基础信息');
+  if(!sec)return'character';
+  const f=sec.fields.find(f=>f.label==='姓名');
+  return(f&&f.value)?f.value:'character';
+}
+
+function qaqDownloadBlob(content,filename,mime){
+  const blob=(content instanceof Blob)?content:new Blob([content],{type:mime+';charset=utf-8'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');a.href=url;a.download=filename;
+  document.body.appendChild(a);a.click();
+  setTimeout(()=>{URL.revokeObjectURL(url);document.body.removeChild(a)},100);
+}
+
+function qaqMakeDocx(text){
+  const h=`<html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'><head><meta charset='utf-8'></head><body style="font-family:SimSun,serif;font-size:12pt;">`;
+  const body=text.split('\n').map(l=>{
+    if(l.startsWith('['))return'<p style="font-weight:bold;font-size:14pt;margin-top:12pt;">'+qaqEsc(l)+'</p>';
+    return'<p>'+qaqEsc(l)+'</p>';
+  }).join('');
+  return new Blob([h+body+'</body></html>'],{type:'application/msword;charset=utf-8'});
+}
+
+function qaqDownload(fmt){
+  qaqCollectAll();
+  const name=qaqGetCharName();
+  const merged=qaqMergeExport;
+
+  function doExport(d,suffix,format){
+    let content,ext,mime;
+    if(format==='json'){content=qaqToJSON(d);ext='.json';mime='application/json'}
+    else if(format==='yaml'){content=qaqToYAML(d);ext='.yaml';mime='text/yaml'}
+    else if(format==='txt'){content=qaqToTxt(d);ext='.txt';mime='text/plain'}
+    else if(format==='docx'){
+      const txt=qaqToTxt(d);
+      const blob=qaqMakeDocx(txt);
+      qaqDownloadBlob(blob,name+suffix+'.doc','application/msword');
+      return;
+    }
+    qaqDownloadBlob(content,name+suffix+ext,mime);
+  }
+
+  if(merged){
+    doExport(qaqBuildExport(true,true),'_complete',fmt);
+  }else{
+    doExport(qaqBuildExport(true,false),'_character',fmt);
+    setTimeout(()=>doExport(qaqBuildExport(false,true),'_worldbook',fmt),300);
+  }
+  qaqToast('下载已开始');
+}
+
+// ===================== ARCHIVE =====================
+function qaqGetArchives(type){try{return JSON.parse(localStorage.getItem('qaq_archives_'+type)||'[]')}catch(e){return[]}}
+function qaqSetArchives(type,d){try{localStorage.setItem('qaq_archives_'+type,JSON.stringify(d))}catch(e){qaqToast('存储空间不足')}}
+
+function qaqSaveArchive(type){
+  qaqCollectAll();
+  let defaultName;
+  if(type==='char'){defaultName=qaqGetCharName()}else{defaultName='世界书'}
+
+  document.getElementById('qaq-archive-name-input').value=defaultName;
+  document.getElementById('qaq-confirm-save-archive').onclick=function(){
+    const aname=document.getElementById('qaq-archive-name-input').value.trim();
+    if(!aname){qaqToast('请输入名称');return}
+    const archives=qaqGetArchives(type);
+    archives.unshift({
+      id:qaqId(),
+      name:aname,
+      date:new Date().toLocaleString('zh-CN'),
+      data:JSON.parse(JSON.stringify(type==='char'?qaqCharData:qaqWorldData)),
+      inspirationSource:type==='char'?(document.getElementById('qaq-inspiration-source')?.value||''):''
+    });
+    qaqSetArchives(type,archives);
+    qaqCloseModal('qaq-modal-save-archive');
+    qaqToast('存档成功');
+  };
+  document.getElementById('qaq-modal-save-archive').classList.add('show');
+}
+
+function qaqShowArchive(){
+  qaqRenderArchiveList('char');
+  document.getElementById('qaq-archive-tab-char').classList.add('active');
+  document.getElementById('qaq-archive-tab-world').classList.remove('active');
+  document.getElementById('qaq-archive-list-char').style.display='';
+  document.getElementById('qaq-archive-list-world').style.display='none';
+  document.getElementById('qaq-modal-archive').classList.add('show');
+}
+
+function qaqSwitchArchiveTab(tab){
+  document.getElementById('qaq-archive-tab-char').classList.toggle('active',tab==='char');
+  document.getElementById('qaq-archive-tab-world').classList.toggle('active',tab==='world');
+  document.getElementById('qaq-archive-list-char').style.display=tab==='char'?'':'none';
+  document.getElementById('qaq-archive-list-world').style.display=tab==='world'?'':'none';
+  qaqRenderArchiveList(tab);
+}
+
+function qaqRenderArchiveList(type){
+  const archives=qaqGetArchives(type);
+  const box=document.getElementById('qaq-archive-list-'+type);
+  if(!archives.length){box.innerHTML='<div class="qaq-empty">暂无存档</div>';return}
+  box.innerHTML=archives.map((a,i)=>`
+    <div class="qaq-archive-item">
+      <div class="qaq-archive-item-info">
+        <div class="qaq-archive-item-name">${qaqEsc(a.name)}</div>
+        <div class="qaq-archive-item-date">${qaqEsc(a.date)}</div>
+      </div>
+      <div class="qaq-archive-item-actions">
+        <button class="qaq-btn qaq-btn-xs" onclick="qaqLoadArchive('${type}',${i})">加载</button>
+        <button class="qaq-btn qaq-btn-xs" onclick="qaqExportOneArchive('${type}',${i})">导出</button>
+        <button class="qaq-btn qaq-btn-xs qaq-btn-danger" onclick="qaqDelArchive('${type}',${i})">
+          <svg viewBox="0 0 24 24" width="10" height="10" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+    </div>`).join('');
+}
+
+function qaqLoadArchive(type,i){
+  const archives=qaqGetArchives(type);
+  const a=archives[i];if(!a)return;
+  if(!confirm('加载此存档将覆盖当前数据，确定?'))return;
+  if(type==='char'){
+    qaqCharData=JSON.parse(JSON.stringify(a.data));
+    if(a.inspirationSource)document.getElementById('qaq-inspiration-source').value=a.inspirationSource;
+    localStorage.setItem('qaq_char_data',JSON.stringify(qaqCharData));
+    qaqRender('char');
+  }else{
+    qaqWorldData=JSON.parse(JSON.stringify(a.data));
+    localStorage.setItem('qaq_world_data',JSON.stringify(qaqWorldData));
+    qaqRender('world');
+  }
+  qaqCloseModal('qaq-modal-archive');
+  qaqToast('已加载');
+}
+
+function qaqDelArchive(type,i){
+  if(!confirm('确定删除此存档?'))return;
+  const archives=qaqGetArchives(type);
+  archives.splice(i,1);
+  qaqSetArchives(type,archives);
+  qaqRenderArchiveList(type);
+}
+
+function qaqExportOneArchive(type,i){
+  const archives=qaqGetArchives(type);
+  const a=archives[i];if(!a)return;
+  const d={_comment:"qaq character editor"};
+  const key=type==='char'?'人设':'世界书';
+  if(type==='char'&&a.inspirationSource)d['灵感来源']=a.inspirationSource;
+  d[key]={};
+  a.data.forEach(sec=>{
+    if(sec.fields.length===1)d[key][sec.title]=sec.fields[0].value;
+    else{const o={};sec.fields.forEach(f=>{o[f.label]=f.value});d[key][sec.title]=o}
+  });
+  qaqDownloadBlob(qaqToJSON(d),a.name+'.json','application/json');
+  qaqToast('导出成功');
+}
+
+function qaqExportAllArchives(type){
+  const archives=qaqGetArchives(type);
+  if(!archives.length){qaqToast('没有存档');return}
+  archives.forEach((a,i)=>setTimeout(()=>qaqExportOneArchive(type,i),i*300));
+}
+
+// ===================== NOTICE =====================
+function qaqShowNotice(){document.getElementById('qaq-modal-notice').classList.add('show')}
+function qaqCloseNotice(){
+  const el=document.getElementById('qaq-no-more-notice');
+  if(el.classList.contains('checked'))localStorage.setItem('qaq_no_notice','1');
+  document.getElementById('qaq-modal-notice').classList.remove('show');
+}
+
+// ===================== MODAL OVERLAY CLOSE =====================
+document.querySelectorAll('.qaq-modal-overlay').forEach(ov=>{
+  ov.addEventListener('click',function(e){if(e.target===this)this.classList.remove('show')});
+});
+
+// ===================== THEME =====================
+const qaqThemes=[
+  {id:'default',name:'默认主题',desc:'草木绿底色'},
+  {id:'light',name:'简洁主题',desc:'白底黑字'},
+  {id:'dark',name:'夜间主题',desc:'深色护眼'}
+];
+
+function qaqShowTheme(){
+  const box=document.getElementById('qaq-theme-list');
+  const current=localStorage.getItem('qaq_theme')||'default';
+  box.innerHTML=qaqThemes.map(t=>{
+    const active=t.id===current;
+    return `<div style="display:flex;align-items:center;justify-content:space-between;padding:10px 12px;background:${active?'var(--accent)':'var(--card)'};border:1px solid ${active?'var(--accent)':'var(--border)'};border-radius:8px;cursor:pointer;color:${active?'#2a3320':'var(--text)'}" onclick="qaqApplyTheme('${t.id}')">
+      <div>
+        <div style="font-size:13px;font-weight:${active?'600':'400'}">${t.name}</div>
+        <div style="font-size:11px;opacity:0.6">${t.desc}</div>
+      </div>
+      ${active?'<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>':''}
+    </div>`;
+  }).join('');
+  document.getElementById('qaq-modal-theme').classList.add('show');
+}
+
+function qaqApplyTheme(id){
+  document.body.classList.remove('qaq-theme-light','qaq-theme-dark');
+  if(id==='light')document.body.classList.add('qaq-theme-light');
+  else if(id==='dark')document.body.classList.add('qaq-theme-dark');
+  localStorage.setItem('qaq_theme',id);
+  qaqShowTheme();
+}
+
+function qaqRestoreTheme(){
+  const saved=localStorage.getItem('qaq_theme')||'default';
+  document.body.classList.remove('qaq-theme-light','qaq-theme-dark');
+  if(saved==='light')document.body.classList.add('qaq-theme-light');
+  else if(saved==='dark')document.body.classList.add('qaq-theme-dark');
+}
+
+// ===================== INIT =====================
+function qaqInit(){
+qaqRestoreTheme();
+  qaqLoadAllData();
+  qaqRender('char');
+  qaqRender('world');
+
+  // Restore inspiration source
+  const savedSrc=localStorage.getItem('qaq_inspiration_source');
+  if(savedSrc)document.getElementById('qaq-inspiration-source').value=savedSrc;
+  document.getElementById('qaq-inspiration-source').addEventListener('input',function(){
+    localStorage.setItem('qaq_inspiration_source',this.value);
+  });
+
+  // Auto show notice
+  if(!localStorage.getItem('qaq_no_notice'))qaqShowNotice();
+}
+
+qaqInit();
+</script>
+</body>
+</html>
